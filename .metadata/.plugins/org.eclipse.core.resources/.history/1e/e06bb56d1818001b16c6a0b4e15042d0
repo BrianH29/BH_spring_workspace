@@ -1,0 +1,17 @@
+package com.kh.spring.member.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+public class MemberController {
+
+	@RequestMapping("login.me")
+	public void test1() {
+		
+	}
+	@RequestMapping("logout.me")
+	public void test2() {
+		
+	}
+}
