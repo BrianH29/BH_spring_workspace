@@ -1,6 +1,0 @@
-package com.kh.spring.member.controller;
-
-@Controller
-public class MemberController {
-
-}

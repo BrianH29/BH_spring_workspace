@@ -28,20 +28,21 @@ public class MemberServiceImpl implements MemberService{
 
 	@Override
 	public int insertMember(Member m) {
-		// TODO Auto-generated method stub
-		return 0;
+		
+		int result = mDao.insertMember(ss, m);
+		return result;
 	}
 
 	@Override
 	public int updateMember(Member m) {
-		// TODO Auto-generated method stub
-		return 0;
+		
+		return mDao.updateMember(ss,m);
 	}
 
 	@Override
 	public int deleteMember(String userId) {
-		// TODO Auto-generated method stub
-		return 0;
+		int result = mDao.deleteMember(ss, userId); 
+		return result;
 	}
 
 	@Override

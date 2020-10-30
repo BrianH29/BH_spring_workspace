@@ -3,7 +3,9 @@ package com.kh.spring.member.controller;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -20,6 +22,9 @@ public class MemberController {
 	@Autowired // 의존성 주입
 	private MemberService mService;
 	//private MemberService mService = new MemberServiceImpl(); 
+	
+	@Autowired
+	private BCryptPasswordEncoder bcryptPasswordEncoder;
 	
 	//* 파라미터(요청시 전달값)를 전송받는 방법  == 요청시 전달되는 값들 처리방법
 	/*
@@ -174,6 +179,7 @@ public class MemberController {
 		 * ModelAndView는 이 두가지를 합쳐놓은 객체 == 응답데이터도 담을수 있고, 응답할 뷰 페이지에 대한 정보도 담을 수 있음
 		 * 
 		 */
+		/*
 		@RequestMapping("login.me")
 		public ModelAndView loginMember(Member m, HttpSession session, ModelAndView mv) {
 			Member loginUser = mService.loginMember(m); 
@@ -189,7 +195,7 @@ public class MemberController {
 			
 			return mv; 
 		}//e.loginMember
-		
+		*/
 		@RequestMapping("logout.me")
 		public String logoutMember(HttpSession session) {
 			session.invalidate();
@@ -202,14 +208,105 @@ public class MemberController {
 		}
 		
 		@RequestMapping("insert.me")
-		public void insertMember(Member m) {
+		public String insertMember(Member m, HttpSession session, Model model) {
 			
-			System.out.println("m : " + m);
+			//System.out.println("m : " + m);
 			
 			/*
 			 * 1.한글 부분이 깨져있음!
 			 *   POST 방식 요청은 인코딩 해야됨!!
 			 *   => 스프링에서 제공하고 있는 인코딩 필터 추가하면 끝! => web.xml에 
+			 *   
+			 * 2. 만약에 나이를 입력하지 않고 넘어오게 되면 "" 빈 문자열이 넘어옴 
+			 *    int 필드인 age에 담으려고 할때  파싱함
+			 *    근ㄷ "" --> 파싱 오류--> NumberFormatException 발생
+			 *    => int형 --> String 형 
+			 *    
+			 * 3. 비밀번호가 사용자가 입력한 그대로의 평문!! 
+			 *    해결 => 암호화 작업을 거쳐서 DB에 저장 
+			 *    
+			 *    bcrypt방식(솔팅기법) => BCryptPasswordEncoder
+			 *    평문 +salt (랜덤값) ---> 암호문
+			 *    따라서 똑같은 평문을 입력해도 매번 다른 암호문이 나올듯!! 
 			 */
+			System.out.println("암호화 전(평문) : " + m.getUserPwd());
+			
+			//암호화 작업(암호문 만들기)
+			String encPwd = bcryptPasswordEncoder.encode(m.getUserPwd());
+			System.out.println("암호화 후:" + encPwd);
+			
+			m.setUserPwd(encPwd); // setter를 통해 암호문 담기 
+			
+			int result = mService.insertMember(m); 
+			if(result>0) { //성공 => 메인 url요청
+				session.setAttribute("alertMsg", "성공적으로 회원가입되었습니다!");
+				return "redirect:/"; 
+			}else {
+				model.addAttribute("errorMsg","회원가입 실패");
+				return "common/errorPage"; 
+			}
+		} //e.insertMember
+		
+		//암호화 처리 후 로그인 처리
+		@RequestMapping("login.me")
+		public String loginMember(Member m, HttpSession session, Model model) {
+			//m => 로그인 요청시 입력했던 아이디, 비밀번호(평문)
+			Member loginUser = mService.loginMember(m); // 아이디만을 가지고 찾는 회원객체
+			// loginUser => 모든 컬럼에 대한값 + 비밀번호(암호문)
+			
+			if(loginUser != null && bcryptPasswordEncoder.matches(m.getUserPwd(), loginUser.getUserPwd())) { //로그인 성공
+				session.setAttribute("loginUser", loginUser);
+				session.setAttribute("alertMsg", loginUser.getUserName() + "님 환영합니다!");
+				return "redirect:/"; 
+			}else { // 실패
+				model.addAttribute("errorMsg", "로그인 실패했습니다.");
+				return "common/errorPage"; 
+			}
+		}//e.loginMember
+		
+		@RequestMapping("myPage.me")
+		public String myPage() { 
+			return "member/myPage"; 
+		}
+		
+		@RequestMapping("update.me")
+		public String updateMember(Member m, HttpSession session,Model model) {
+			
+			int result = mService.updateMember(m); 
+			
+			if(result > 0) { //성공 => 세션에 담기 member객체 바꾸기 => 마이페이지 요청
+				session.setAttribute("loginUser", mService.loginMember(m));
+				session.setAttribute("alertMsg", "성공적으로 정보 변경 되었습니다.");
+				return "redirect:myPage.me"; 
+			} else {
+				model.addAttribute("errorMsg","수정 실패했습니다.");
+				return "common/erroPage"; 
+			}
+		}//e.updateMember
+		
+		@RequestMapping("delete.me")
+		public String deleteMember(String userPwd, HttpSession session, Model model) {
+			// userPwd : 비밀번호(평문) 
+			Member loginUser = (Member)session.getAttribute("loginUser"); 
+			
+			// session안에 loginUser userPwd : 비밀번호(암호문) 
+			
+			if(bcryptPasswordEncoder.matches(userPwd, loginUser.getUserPwd())) {
+				//비밀번호가 일치함 => 인증됨
+				int result = mService.deleteMember(loginUser.getUserId()); 
+				if(result>0) {//성공 => 세션 무효화 => 메인페이지 요청 
+					//session.invalidate(); 
+					session.removeAttribute("loginUser");
+					session.setAttribute("alertMsg", "성공적으로 탈퇴되었습니다. 그 동안 이용해주셔서 감사합니다.");
+					return "redirect:/";
+				}else {//실패 => 에러문구 담아서 에러페이지 포워딩
+					model.addAttribute("errorMsg","탈퇴 실패하셨습니다.");
+					return "common/errorPage"; 
+				}
+			} else {
+				//비번 틀림!
+				session.setAttribute("alertMsg", "비번이 틀렸습니다");
+				return "redirect:/myPage.me"; 
+			}
 		}
 }
