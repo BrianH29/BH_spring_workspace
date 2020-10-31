@@ -1,0 +1,9 @@
+package com.kh.spring.board.model.dao;
+
+import org.springframework.stereotype.Repository;
+
+//스프링에서 관리할 수 있게 bean으로 등록하기 
+@Repository
+public class BoardDao {
+
+}

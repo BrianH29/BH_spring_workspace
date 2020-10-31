@@ -1,0 +1,8 @@
+package com.kh.spring.board.model.service;
+
+public interface BoardService {
+
+	public abstract int selectListCount();
+	
+	ArrayList<Board> selectList(PageInfo pi);
+}
