@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.kh.spring.member.model.service.MemberService;
 import com.kh.spring.member.model.vo.Member;
@@ -308,4 +309,18 @@ public class MemberController {
 				return "redirect:/myPage.me"; 
 			}
 		}
+		
+		@ResponseBody
+		@RequestMapping("idCheck.me")
+		public String idCheck(String userId) {
+			// ajax 요청
+			int count = mService.idCheck(userId);
+			
+			if(count>0) {//이미 존재 => 사용불가능 => "fail"
+				return "fail";
+			} else { // 존재안함 => 사용가능 
+				return "success"; 
+			}
+			
+		}//e.idCheck
 }

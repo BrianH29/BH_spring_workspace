@@ -83,8 +83,50 @@ select
 		 where status = 'Y'
 		 order 
 		    by board_no desc; 
+
+alter table board 
+modify origin_name varchar2(300)
+modify change_name varchar2(300);
+---2. 게시판 작성 요청시 실행할 sql문
+insert  
+  into board
+     (
+       board_no
+     , board_title
+     , board_writer
+     , board_content
+     , origin_name
+     , change_name
+     )
+ values
+     (
+       seq_bno.nextval
+     , #{boardTitle}
+     , #{boardWriter}
+     , #{boardContent}
+     , #{originName}
+     , #{changeName}
+     );
      
-     
+ -- 3. 게시글 상세보기 요청시 실행할 sql문
+ --3_1 해당 게시글 조회수 증
+ update
+        board
+    set count = count + 1
+  where board_no = #{bno}
+    and status = 'Y';
+--3_2. 게시글 상세 조회
+select 
+       board_no
+     , board_title
+     , board_writer
+     , create_date
+     , board_content
+     , origin_name
+     , change_name
+  from board
+ where board_no = #{bno}
+   and status = 'Y'; 
      
      
      

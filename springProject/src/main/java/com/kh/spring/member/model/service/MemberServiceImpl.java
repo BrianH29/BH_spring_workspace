@@ -46,8 +46,8 @@ public class MemberServiceImpl implements MemberService{
 
 	@Override
 	public int idCheck(String userId) {
-		// TODO Auto-generated method stub
-		return 0;
+		int count = mDao.idCheck(ss, userId);
+		return count;
 	}
 
 }
